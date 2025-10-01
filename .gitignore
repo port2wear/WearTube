@@ -1,0 +1,23 @@
+# IntelliJ / Android Studio
+*.iml
+.idea/
+.idea/**
+.DS_Store
+
+# Gradle
+.gradle/
+**/build/
+/build/
+/local.properties
+local.properties
+
+# Native builds
+.externalNativeBuild/
+.cxx/
+
+# Captures & misc
+**/captures/
+.captures/
+
+# Kotlin/Compose caches
+.kotlin/
