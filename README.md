@@ -110,48 +110,6 @@ Notes
 
 ---
 
-## Shorts Layout
-
-Use the 2-column Shorts grid wherever you need quick discovery:
-
-```kotlin
-ShortsGrid(
-  videos = videos,
-  onClick = { video -> /* open details */ }
-)
-```
-
-Under the hood:
-- `ShortItem`: 16:9 thumbnail + title + lightweight view line
-- `ShortsGrid`: vertical scroll, chunked into rows of two
-
----
-
-## Cleanup & Housekeeping
-
-Transient build artifacts and IDE caches can balloon quickly. This repo includes a small utility to prune them safely.
-
-Clean the project (repo only)
-```
-bash scripts/clean.sh --yes
-```
-
-Clean + purge local Gradle cache (heavy)
-```
-bash scripts/clean.sh --yes --all
-```
-
-What it removes
-- Module and root build dirs (`**/build/`, `/build/`)
-- `.gradle/`, `.kotlin/`
-- Common Android Studio caches in `.idea/`
-- Native build folders (`.externalNativeBuild/`, `.cxx/`)
-- Captures, `.DS_Store`
-
-> `.gitignore` is hardened to keep these artifacts out of version control.
-
----
-
 ## Development Tips
 
 - Keep composables preview-friendly: provide safe default parameters in previews
