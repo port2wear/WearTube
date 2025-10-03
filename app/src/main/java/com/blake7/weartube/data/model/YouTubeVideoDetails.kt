@@ -1,7 +1,5 @@
 package com.blake7.weartube.data.model
 
-import com.google.gson.annotations.SerializedName
-
 data class YouTubeVideoDetailsResponse(
     val items: List<YouTubeVideoDetails>?
 )
@@ -9,7 +7,8 @@ data class YouTubeVideoDetailsResponse(
 data class YouTubeVideoDetails(
     val id: String?,
     val snippet: VideoDetailsSnippet?,
-    val statistics: VideoStatistics?
+    val statistics: VideoStatistics?,
+    val contentDetails: ContentDetails?
 )
 
 data class VideoDetailsSnippet(
@@ -72,4 +71,14 @@ data class CommentSnippet(
 
 data class AuthorChannelId(
     val value: String?
+)
+
+// Content details for video duration, quality, etc.
+data class ContentDetails(
+    val duration: String?,
+    val dimension: String?,
+    val definition: String?,
+    val caption: String?,
+    val licensedContent: Boolean?,
+    val projection: String?
 )

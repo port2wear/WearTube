@@ -1,10 +1,12 @@
 package com.blake7.weartube.presentation.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.blake7.weartube.data.model.YouTubeVideo
 import com.blake7.weartube.data.model.YouTubeVideoDetails
 import com.blake7.weartube.data.model.CommentThread
+import com.blake7.weartube.data.model.YouTubeChannel
 import com.blake7.weartube.data.repository.YouTubeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,17 +14,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class VideoPlayerUiState(
-    val video: YouTubeVideo? = null,
+    val isLoading: Boolean = false,
     val videoDetails: YouTubeVideoDetails? = null,
     val comments: List<CommentThread> = emptyList(),
-    val isPlaying: Boolean = false,
-    val isLoading: Boolean = false,
     val isLoadingComments: Boolean = false,
-    val error: String? = null,
-    val streamUrl: String? = null
+    val channelDetails: YouTubeChannel? = null,
+    val embedUrl: String? = null,
+    val videoDuration: String? = null,
+    val error: String? = null
 )
 
-class VideoPlayerViewModel : ViewModel() {
+class VideoPlayerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = YouTubeRepository()
 
@@ -31,76 +33,69 @@ class VideoPlayerViewModel : ViewModel() {
 
     fun loadVideo(video: YouTubeVideo) {
         _uiState.value = _uiState.value.copy(
-            video = video,
             isLoading = true,
             error = null
         )
 
         viewModelScope.launch {
             try {
-                val streamUrl = repository.getVideoStreamUrl(video.videoId)
-                _uiState.value = _uiState.value.copy(
-                    streamUrl = streamUrl,
-                    isLoading = false
-                )
+                // Generate the embed URL immediately for faster loading
+                val embedUrl = repository.getEmbedUrl(video.videoId, autoplay = false)
+                _uiState.value = _uiState.value.copy(embedUrl = embedUrl)
 
-                // Load video details and comments
-                loadVideoDetails(video.videoId)
-                loadVideoComments(video.videoId)
+                // Load additional video data concurrently
+                launch { loadVideoDetails(video.videoId) }
+                launch { loadVideoComments(video.videoId) }
+
+                _uiState.value = _uiState.value.copy(isLoading = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Failed to load video"
+                    error = "Failed to load video: ${e.message}",
+                    isLoading = false
                 )
             }
         }
     }
 
-    private fun loadVideoDetails(videoId: String) {
-        viewModelScope.launch {
-            repository.getVideoDetails(videoId).fold(
-                onSuccess = { videoDetails ->
-                    _uiState.value = _uiState.value.copy(
-                        videoDetails = videoDetails
-                    )
-                },
-                onFailure = { error ->
-                    // Don't update error state for details, just log it
-                    println("Failed to load video details: ${error.message}")
-                }
+    private suspend fun loadVideoDetails(videoId: String) {
+        try {
+            val details = repository.getVideoDetails(videoId)
+            _uiState.value = _uiState.value.copy(
+                videoDetails = details,
+                videoDuration = repository.parseVideoDuration(details?.contentDetails?.duration)
             )
+
+            // Load channel details if we have the channel ID
+            details?.snippet?.channelId?.let { channelId ->
+                loadChannelDetails(channelId)
+            }
+        } catch (_: Exception) {
+            // Video details loading failed, but don't show error for this
         }
     }
 
-    private fun loadVideoComments(videoId: String) {
+    private suspend fun loadChannelDetails(channelId: String) {
+        try {
+            val channel = repository.getChannelDetails(channelId)
+            _uiState.value = _uiState.value.copy(
+                channelDetails = channel
+            )
+        } catch (_: Exception) {
+            // Channel details loading failed, but don't show error for this
+        }
+    }
+
+    private suspend fun loadVideoComments(videoId: String) {
         _uiState.value = _uiState.value.copy(isLoadingComments = true)
-
-        viewModelScope.launch {
-            repository.getVideoComments(videoId).fold(
-                onSuccess = { (comments, _) ->
-                    _uiState.value = _uiState.value.copy(
-                        comments = comments,
-                        isLoadingComments = false
-                    )
-                },
-                onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingComments = false
-                    )
-                    // Don't show error for comments, just log it
-                    println("Failed to load comments: ${error.message}")
-                }
+        try {
+            val comments = repository.getVideoComments(videoId)
+            _uiState.value = _uiState.value.copy(
+                comments = comments,
+                isLoadingComments = false
             )
+        } catch (_: Exception) {
+            // Comments loading failed, but don't show error for this
+            _uiState.value = _uiState.value.copy(isLoadingComments = false)
         }
-    }
-
-    fun playPause() {
-        _uiState.value = _uiState.value.copy(
-            isPlaying = !_uiState.value.isPlaying
-        )
-    }
-
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
     }
 }

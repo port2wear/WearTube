@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- No specific backup rules needed for this app -->
+    </cloud-backup>
+    <device-transfer>
+        <!-- No specific transfer rules needed for this app -->
+    </device-transfer>
+</data-extraction-rules>
+

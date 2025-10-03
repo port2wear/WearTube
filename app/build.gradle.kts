@@ -15,6 +15,15 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        // Load API key from local.properties
+        val properties = org.jetbrains.kotlin.konan.properties.Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { properties.load(it) }
+        }
+        
+        val youtubeApiKey = properties.getProperty("youtube.api.key", "")
+        buildConfigField("String", "YOUTUBE_API_KEY", "\"$youtubeApiKey\"")
     }
 
     buildTypes {
@@ -30,12 +39,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
     useLibrary("wear-sdk")
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -77,9 +89,8 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.wear.compose.navigation)
 
-    // Video playback
-    implementation(libs.exoplayer)
-    implementation(libs.exoplayer.ui)
+    // WebView for YouTube embedded player (Official YouTube API approach)
+    implementation(libs.webkit)
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
